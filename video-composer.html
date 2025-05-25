@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sketch Video Composer</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            text-align: center;
+        }
+        
+        .content {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+        }
+        
+        .preview-section {
+            position: relative;
+        }
+        
+        .canvas-container {
+            position: relative;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        #compositeCanvas {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .controls {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        .file-input-button {
+            display: block;
+            width: 100%;
+            padding: 12px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: background 0.2s;
+        }
+        
+        .file-input-button:hover {
+            background: #0056b3;
+        }
+        
+        input[type="text"], input[type="number"], input[type="range"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        
+        input[type="text"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        
+        .range-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .range-value {
+            min-width: 40px;
+            text-align: center;
+            font-weight: 600;
+            color: #666;
+        }
+        
+        .position-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .size-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .download-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e9ecef;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            display: inline-block;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            margin-right: 10px;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                margin: 10px;
+            }
+            
+            body {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 Sketch Video Composer</h1>
+            <p>Bring your sketches to life with AI-generated animations</p>
+        </div>
+        
+        <div class="content">
+            <div class="preview-section">
+                <div class="canvas-container">
+                    <canvas id="compositeCanvas" width="405" height="720"></canvas>
+                    <video id="hiddenVideo" style="display: none;" loop muted></video>
+                </div>
+                
+                <div class="download-section">
+                    <button id="recordBtn" class="btn btn-secondary">🎥 Start Recording</button>
+                    <button id="downloadBtn" class="btn btn-primary hidden">📥 Download Video</button>
+                    <div id="status" class="status hidden"></div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label for="backgroundVideo">Background Video (AI Monster)</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="backgroundVideo" class="file-input" accept="video/*">
+                        <div class="file-input-button">Choose Monster Video</div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label for="backgroundTemplate">Background Template</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="backgroundTemplate" class="file-input" accept="image/*">
+                        <div class="file-input-button">Upload Background Template</div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label for="originalSketch">Original Sketch</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="originalSketch" class="file-input" accept="image/*">
+                        <div class="file-input-button">Upload Original Sketch</div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label for="monsterName">Monster Name</label>
+                    <input type="text" id="monsterName" placeholder="Enter monster name..." value="Whiskers">
+                </div>
+                
+                <div class="control-group">
+                    <label for="childAge">Child's Age</label>
+                    <input type="number" id="childAge" placeholder="Age" value="8" min="1" max="18">
+                </div>
+                
+                <div class="control-group">
+                    <label>Sketch Position</label>
+                    <div class="position-controls">
+                        <div>
+                            <label for="sketchX">X Position</label>
+                            <div class="range-container">
+                                <input type="range" id="sketchX" min="0" max="250" value="50">
+                                <span class="range-value" id="sketchXValue">50</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="sketchY">Y Position</label>
+                            <div class="range-container">
+                                <input type="range" id="sketchY" min="0" max="500" value="560">
+                                <span class="range-value" id="sketchYValue">560</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Sketch Size (9:16 Aspect Ratio)</label>
+                    <div class="size-controls">
+                        <div>
+                            <label for="sketchWidth">Width</label>
+                            <div class="range-container">
+                                <input type="range" id="sketchWidth" min="50" max="200" value="135">
+                                <span class="range-value" id="sketchWidthValue">135</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="sketchHeight">Height</label>
+                            <div class="range-container">
+                                <input type="range" id="sketchHeight" min="89" max="356" value="240">
+                                <span class="range-value" id="sketchHeightValue">240</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <label>
+                            <input type="checkbox" id="maintainAspectRatio" checked> 
+                            Maintain 9:16 aspect ratio
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Recording Duration (seconds)</label>
+                    <div class="range-container">
+                        <input type="range" id="recordDuration" min="3" max="15" value="5">
+                        <span class="range-value" id="recordDurationValue">5</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Text Position</label>
+                    <div class="position-controls">
+                        <div>
+                            <label for="textX">Text X Position</label>
+                            <div class="range-container">
+                                <input type="range" id="textX" min="0" max="350" value="220">
+                                <span class="range-value" id="textXValue">220</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="textY">Text Y Position</label>
+                            <div class="range-container">
+                                <input type="range" id="textY" min="100" max="650" value="680">
+                                <span class="range-value" id="textYValue">680</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Video Frame Position</label>
+                    <div class="position-controls">
+                        <div>
+                            <label for="videoX">Video X Position</label>
+                            <div class="range-container">
+                                <input type="range" id="videoX" min="0" max="200" value="60">
+                                <span class="range-value" id="videoXValue">60</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="videoY">Video Y Position</label>
+                            <div class="range-container">
+                                <input type="range" id="videoY" min="50" max="300" value="120">
+                                <span class="range-value" id="videoYValue">120</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Video Frame Size</label>
+                    <div class="size-controls">
+                        <div>
+                            <label for="videoWidth">Video Width</label>
+                            <div class="range-container">
+                                <input type="range" id="videoWidth" min="200" max="350" value="285">
+                                <span class="range-value" id="videoWidthValue">285</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="videoHeight">Video Height</label>
+                            <div class="range-container">
+                                <input type="range" id="videoHeight" min="300" max="500" value="428">
+                                <span class="range-value" id="videoHeightValue">428</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class SketchVideoComposer {
+            constructor() {
+                this.canvas = document.getElementById('compositeCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.video = document.getElementById('hiddenVideo');
+                
+                this.backgroundVideo = null;
+                this.backgroundTemplate = null;
+                this.originalSketch = null;
+                this.mediaRecorder = null;
+                this.recordedChunks = [];
+                this.isRecording = false;
+                
+                this.setupEventListeners();
+                this.setupCanvas();
+                this.startAnimation();
+            }
+            
+            setupCanvas() {
+                // Set canvas to 9:16 ratio (405x720 for good quality)
+                this.canvas.width = 405;
+                this.canvas.height = 720;
+                this.drawBackground();
+            }
+            
+            setupEventListeners() {
+                // File inputs
+                document.getElementById('backgroundVideo').addEventListener('change', (e) => {
+                    this.loadBackgroundVideo(e.target.files[0]);
+                });
+                
+                document.getElementById('backgroundTemplate').addEventListener('change', (e) => {
+                    this.loadBackgroundTemplate(e.target.files[0]);
+                });
+                
+                document.getElementById('originalSketch').addEventListener('change', (e) => {
+                    this.loadOriginalSketch(e.target.files[0]);
+                });
+                
+                // Text inputs
+                document.getElementById('monsterName').addEventListener('input', () => {
+                    this.redraw();
+                });
+                
+                document.getElementById('childAge').addEventListener('input', () => {
+                    this.redraw();
+                });
+                
+                // Range inputs
+                const ranges = ['sketchX', 'sketchY', 'sketchWidth', 'sketchHeight', 'recordDuration', 'textX', 'textY', 'videoX', 'videoY', 'videoWidth', 'videoHeight'];
+                ranges.forEach(id => {
+                    const range = document.getElementById(id);
+                    const valueDisplay = document.getElementById(id + 'Value');
+                    range.addEventListener('input', () => {
+                        valueDisplay.textContent = range.value;
+                        if (id !== 'recordDuration') {
+                            if (id === 'sketchWidth' || id === 'sketchHeight') {
+                                this.handleSizeChange(id, parseInt(range.value));
+                            }
+                            this.redraw();
+                        }
+                    });
+                });
+                
+                // Aspect ratio checkbox
+                document.getElementById('maintainAspectRatio').addEventListener('change', () => {
+                    this.updateAspectRatioConstraints();
+                });
+                
+                // Recording controls
+                document.getElementById('recordBtn').addEventListener('click', () => {
+                    this.toggleRecording();
+                });
+                
+                document.getElementById('downloadBtn').addEventListener('click', () => {
+                    this.downloadVideo();
+                });
+            }
+            
+            handleSizeChange(changedDimension, value) {
+                const maintainRatio = document.getElementById('maintainAspectRatio').checked;
+                if (!maintainRatio) return;
+                
+                const aspectRatio = 9 / 16; // width / height
+                
+                if (changedDimension === 'sketchWidth') {
+                    const newHeight = Math.round(value / aspectRatio);
+                    const heightSlider = document.getElementById('sketchHeight');
+                    heightSlider.value = Math.min(Math.max(newHeight, heightSlider.min), heightSlider.max);
+                    document.getElementById('sketchHeightValue').textContent = heightSlider.value;
+                } else if (changedDimension === 'sketchHeight') {
+                    const newWidth = Math.round(value * aspectRatio);
+                    const widthSlider = document.getElementById('sketchWidth');
+                    widthSlider.value = Math.min(Math.max(newWidth, widthSlider.min), widthSlider.max);
+                    document.getElementById('sketchWidthValue').textContent = widthSlider.value;
+                }
+            }
+            
+            updateAspectRatioConstraints() {
+                const maintainRatio = document.getElementById('maintainAspectRatio').checked;
+                const widthSlider = document.getElementById('sketchWidth');
+                const heightSlider = document.getElementById('sketchHeight');
+                
+                if (maintainRatio) {
+                    // Adjust height to match current width
+                    this.handleSizeChange('sketchWidth', parseInt(widthSlider.value));
+                }
+            }
+            
+            loadBackgroundVideo(file) {
+                if (!file) return;
+                
+                const url = URL.createObjectURL(file);
+                this.video.src = url;
+                this.video.load();
+                
+                this.video.addEventListener('loadeddata', () => {
+                    this.backgroundVideo = this.video;
+                    this.video.play();
+                    this.showStatus('Background video loaded successfully!', 'success');
+                });
+                
+                this.video.addEventListener('error', () => {
+                    this.showStatus('Error loading background video', 'error');
+                });
+            }
+            
+            loadBackgroundTemplate(file) {
+                if (!file) return;
+                
+                const img = new Image();
+                const url = URL.createObjectURL(file);
+                
+                img.onload = () => {
+                    this.backgroundTemplate = img;
+                    this.redraw();
+                    this.showStatus('Background template loaded successfully!', 'success');
+                    URL.revokeObjectURL(url);
+                };
+                
+                img.onerror = () => {
+                    this.showStatus('Error loading background template', 'error');
+                    URL.revokeObjectURL(url);
+                };
+                
+                img.src = url;
+            }
+            
+            loadOriginalSketch(file) {
+                if (!file) return;
+                
+                const img = new Image();
+                const url = URL.createObjectURL(file);
+                
+                img.onload = () => {
+                    this.originalSketch = img;
+                    this.redraw();
+                    this.showStatus('Original sketch loaded successfully!', 'success');
+                    URL.revokeObjectURL(url);
+                };
+                
+                img.onerror = () => {
+                    this.showStatus('Error loading sketch image', 'error');
+                    URL.revokeObjectURL(url);
+                };
+                
+                img.src = url;
+            }
+            
+            drawBackground() {
+                // Clear canvas
+                this.ctx.fillStyle = '#1a1a1a';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Draw background template if available
+                if (this.backgroundTemplate) {
+                    this.ctx.drawImage(this.backgroundTemplate, 0, 0, this.canvas.width, this.canvas.height);
+                    
+                    // Draw video in center frame area (adjust these values based on your template)
+                    if (this.backgroundVideo && !this.backgroundVideo.paused) {
+                        // Get dynamic video frame dimensions from controls
+                        const videoFrameX = parseInt(document.getElementById('videoX').value);
+                        const videoFrameY = parseInt(document.getElementById('videoY').value);
+                        const videoFrameWidth = parseInt(document.getElementById('videoWidth').value);
+                        const videoFrameHeight = parseInt(document.getElementById('videoHeight').value);
+                        const cornerRadius = 20; // Rounded corners
+                        
+                        // Create clipping path for rounded rectangle
+                        this.ctx.save();
+                        this.ctx.beginPath();
+                        this.ctx.roundRect(videoFrameX, videoFrameY, videoFrameWidth, videoFrameHeight, cornerRadius);
+                        this.ctx.clip();
+                        
+                        // Draw the video within the frame
+                        this.ctx.drawImage(this.backgroundVideo, videoFrameX, videoFrameY, videoFrameWidth, videoFrameHeight);
+                        
+                        this.ctx.restore();
+                    }
+                } else {
+                    // Fallback: draw video or gradient background (original behavior)
+                    if (this.backgroundVideo && !this.backgroundVideo.paused) {
+                        this.ctx.drawImage(this.backgroundVideo, 0, 0, this.canvas.width, this.canvas.height);
+                    } else {
+                        // Default gradient background
+                        const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+                        gradient.addColorStop(0, '#667eea');
+                        gradient.addColorStop(1, '#764ba2');
+                        this.ctx.fillStyle = gradient;
+                        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                        
+                        // Placeholder text
+                        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                        this.ctx.font = '24px Arial';
+                        this.ctx.textAlign = 'center';
+                        this.ctx.fillText('Upload Monster Video', this.canvas.width / 2, this.canvas.height / 2);
+                    }
+                }
+            }
+            
+            drawSketch() {
+                if (!this.originalSketch) return;
+                
+                const x = parseInt(document.getElementById('sketchX').value);
+                const y = parseInt(document.getElementById('sketchY').value);
+                const width = parseInt(document.getElementById('sketchWidth').value);
+                const height = parseInt(document.getElementById('sketchHeight').value);
+                
+                // Draw sketch with rounded corners and border
+                this.ctx.save();
+                
+                // Create rounded rectangle path
+                const radius = 8;
+                this.ctx.beginPath();
+                this.ctx.roundRect(x, y, width, height, radius);
+                this.ctx.clip();
+                
+                // Draw white background
+                this.ctx.fillStyle = 'white';
+                this.ctx.fillRect(x, y, width, height);
+                
+                // Draw the sketch image (maintain aspect ratio)
+                this.drawImageFit(this.originalSketch, x, y, width, height);
+                
+                this.ctx.restore();
+                
+                // Draw border
+                this.ctx.strokeStyle = '#ffffff';
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.roundRect(x, y, width, height, radius);
+                this.ctx.stroke();
+                
+                // Add shadow
+                this.ctx.save();
+                this.ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+                this.ctx.shadowBlur = 10;
+                this.ctx.shadowOffsetX = 2;
+                this.ctx.shadowOffsetY = 2;
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.roundRect(x, y, width, height, radius);
+                this.ctx.stroke();
+                this.ctx.restore();
+            }
+            
+            drawImageFit(img, x, y, width, height) {
+                // Calculate scaling to fit image within bounds while maintaining aspect ratio
+                const imgAspect = img.width / img.height;
+                const targetAspect = width / height;
+                
+                let drawWidth, drawHeight, drawX, drawY;
+                
+                if (imgAspect > targetAspect) {
+                    // Image is wider than target - fit to width
+                    drawWidth = width;
+                    drawHeight = width / imgAspect;
+                    drawX = x;
+                    drawY = y + (height - drawHeight) / 2;
+                } else {
+                    // Image is taller than target - fit to height
+                    drawHeight = height;
+                    drawWidth = height * imgAspect;
+                    drawX = x + (width - drawWidth) / 2;
+                    drawY = y;
+                }
+                
+                this.ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+            }
+            
+            drawText() {
+                const monsterName = document.getElementById('monsterName').value;
+                const childAge = document.getElementById('childAge').value;
+                const textX = parseInt(document.getElementById('textX').value);
+                const textY = parseInt(document.getElementById('textY').value);
+                
+                // Configure text styling
+                this.ctx.textAlign = 'left';
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.strokeStyle = '#000000';
+                this.ctx.lineWidth = 2;
+                
+                // Draw monster name (large)
+                this.ctx.font = 'bold 28px Arial, sans-serif';
+                this.ctx.strokeText(monsterName, textX, textY - 30);
+                this.ctx.fillText(monsterName, textX, textY - 30);
+                
+                // Draw age (smaller, below name)
+                this.ctx.font = 'bold 20px Arial, sans-serif';
+                const ageText = `Age: ${childAge}`;
+                this.ctx.strokeText(ageText, textX, textY);
+                this.ctx.fillText(ageText, textX, textY);
+            }
+            
+            redraw() {
+                this.drawBackground();
+                this.drawSketch();
+                this.drawText();
+            }
+            
+            startAnimation() {
+                const animate = () => {
+                    this.redraw();
+                    requestAnimationFrame(animate);
+                };
+                animate();
+            }
+            
+            async toggleRecording() {
+                if (this.isRecording) {
+                    this.stopRecording();
+                } else {
+                    await this.startRecording();
+                }
+            }
+            
+            async startRecording() {
+                try {
+                    const stream = this.canvas.captureStream(30); // 30 FPS
+                    
+                    this.mediaRecorder = new MediaRecorder(stream, {
+                        mimeType: 'video/webm;codecs=vp9'
+                    });
+                    
+                    this.recordedChunks = [];
+                    
+                    this.mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            this.recordedChunks.push(event.data);
+                        }
+                    };
+                    
+                    this.mediaRecorder.onstop = () => {
+                        this.createDownloadableVideo();
+                    };
+                    
+                    this.mediaRecorder.start();
+                    this.isRecording = true;
+                    
+                    const recordBtn = document.getElementById('recordBtn');
+                    recordBtn.textContent = '⏹️ Stop Recording';
+                    recordBtn.classList.remove('btn-secondary');
+                    recordBtn.classList.add('btn-primary');
+                    
+                    this.showStatus('Recording started...', 'info');
+                    
+                    // Auto-stop after specified duration
+                    const duration = parseInt(document.getElementById('recordDuration').value) * 1000;
+                    setTimeout(() => {
+                        if (this.isRecording) {
+                            this.stopRecording();
+                        }
+                    }, duration);
+                    
+                } catch (error) {
+                    console.error('Error starting recording:', error);
+                    this.showStatus('Error starting recording', 'error');
+                }
+            }
+            
+            stopRecording() {
+                if (this.mediaRecorder && this.isRecording) {
+                    this.mediaRecorder.stop();
+                    this.isRecording = false;
+                    
+                    const recordBtn = document.getElementById('recordBtn');
+                    recordBtn.textContent = '🎥 Start Recording';
+                    recordBtn.classList.remove('btn-primary');
+                    recordBtn.classList.add('btn-secondary');
+                    
+                    this.showStatus('Recording completed!', 'success');
+                }
+            }
+            
+            createDownloadableVideo() {
+                const blob = new Blob(this.recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                
+                const downloadBtn = document.getElementById('downloadBtn');
+                downloadBtn.href = url;
+                downloadBtn.classList.remove('hidden');
+                downloadBtn.download = `sketch-monster-${Date.now()}.webm`;
+                
+                this.showStatus('Video ready for download!', 'success');
+            }
+            
+            downloadVideo() {
+                const blob = new Blob(this.recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `sketch-monster-${Date.now()}.webm`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                URL.revokeObjectURL(url);
+                this.showStatus('Video downloaded successfully!', 'success');
+            }
+            
+            showStatus(message, type) {
+                const status = document.getElementById('status');
+                status.textContent = message;
+                status.className = `status ${type}`;
+                status.classList.remove('hidden');
+                
+                setTimeout(() => {
+                    status.classList.add('hidden');
+                }, 3000);
+            }
+        }
+        
+        // Add roundRect polyfill for older browsers
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, width, height, radius) {
+                this.moveTo(x + radius, y);
+                this.lineTo(x + width - radius, y);
+                this.quadraticCurveTo(x + width, y, x + width, y + radius);
+                this.lineTo(x + width, y + height - radius);
+                this.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+                this.lineTo(x + radius, y + height);
+                this.quadraticCurveTo(x, y + height, x, y + height - radius);
+                this.lineTo(x, y + radius);
+                this.quadraticCurveTo(x, y, x + radius, y);
+                this.closePath();
+            };
+        }
+        
+        // Initialize the composer when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new SketchVideoComposer();
+        });
+    </script>
+</body>
+</html> 

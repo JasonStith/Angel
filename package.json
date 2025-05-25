@@ -1,0 +1,42 @@
+{
+  "name": "sketch-video-composer",
+  "version": "1.0.0",
+  "description": "AI-powered sketch to video composition tool",
+  "main": "server-video-processor.js",
+  "scripts": {
+    "start": "node server-video-processor.js",
+    "dev": "nodemon server-video-processor.js",
+    "test": "jest",
+    "build": "npm install"
+  },
+  "keywords": [
+    "video",
+    "composition",
+    "ai",
+    "sketch",
+    "animation",
+    "ffmpeg",
+    "children",
+    "creative"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "fluent-ffmpeg": "^2.1.2",
+    "multer": "^1.4.5-lts.1",
+    "uuid": "^9.0.0",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "jest": "^29.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "your-repo-url"
+  }
+} 
